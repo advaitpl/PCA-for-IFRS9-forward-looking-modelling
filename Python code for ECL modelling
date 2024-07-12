@@ -1,0 +1,30 @@
+import pandas as pd
+import numpy as np
+from sklearn.decomposition import PCA
+import statsmodels.formula.api as smf
+#data import
+fp = "pca.csv" ##from pcs file in repo
+db = pd.read_csv(filepath_or_buffer = fp)
+#expected directional relationship
+dr_e = {"gdp": "-", "unemployment": "+", "wage": "-"}
+#standardize pca inputs
+mv = ["gdp", "unemployment", "wage"]
+db[mv] = (db[mv] - np.mean(db[mv], axis = 0)) / np.std(db[mv], axis = 0, ddof = 1)
+#pca
+pca = PCA(svd_solver = "full")
+pca_res = pca.fit_transform(X = db.iloc[:, 1:])
+#pca rotations
+pca.components_
+
+#ols - principal component
+ols_p = smf.ols(formula = "odr ~ pca_1",
+data = db).fit()
+ols_p.params
+#observed directional relationship
+dr_o = np.sign(ols_p.params["pca_1"]* pca.components_[0])
+dr_o = np.where(dr_o == 1, "+", "-")
+#compare the expected and observed directional relationship
+dr_c = pd.DataFrame({"EXPECTED": dr_e.values(),
+"OBSERVED": dr_o},
+index = dr_e.keys())
+dr_c
